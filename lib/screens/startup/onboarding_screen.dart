@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/routes.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 import 'startup_gate.dart';
 
@@ -70,6 +71,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               child: Row(
                 children: [
+                  const LanguageGlobeButton(),
                   const Spacer(),
                   TextButton(
                     onPressed: _finish,

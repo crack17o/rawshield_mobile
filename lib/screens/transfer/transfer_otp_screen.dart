@@ -9,6 +9,7 @@ import '../../services/app_prefs.dart';
 import 'transfer_state.dart';
 import 'transfer_risk_utils.dart';
 import 'transfer_plafond_utils.dart';
+import '../../l10n/language_globe_button.dart';
 
 class TransferOtpScreen extends ConsumerStatefulWidget {
   const TransferOtpScreen({super.key});
@@ -129,7 +130,7 @@ class _TransferOtpScreenState extends ConsumerState<TransferOtpScreen> {
                     style: t.titleLarge?.copyWith(color: RawShieldColors.text),
                   ),
                 ),
-                const SizedBox(width: 48),
+                const LanguageGlobeButton(),
               ],
             ),
           ),

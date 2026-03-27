@@ -9,11 +9,25 @@ import '../../providers/tab_index_provider.dart';
 import '../../services/app_prefs.dart';
 import '../../theme/rawshield_theme.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  int _activeLimitCard = 0;
+  final PageController _limitCardsController = PageController(viewportFraction: 0.92);
+
+  @override
+  void dispose() {
+    _limitCardsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = ref.watch(appStringsProvider);
     final t = Theme.of(context).textTheme;
 
@@ -81,37 +95,49 @@ class ProfileScreen extends ConsumerWidget {
 
             const SizedBox(height: RawShieldSpacing.lg),
 
-            Container(
-              padding: const EdgeInsets.all(RawShieldSpacing.md),
-              decoration: BoxDecoration(
-                color: RawShieldColors.surface,
-                borderRadius: BorderRadius.circular(RawShieldRadii.lg),
-                border: Border.all(color: RawShieldColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Text(s.accountLimitsTitle, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
+            const SizedBox(height: RawShieldSpacing.md),
+            SizedBox(
+              height: 188,
+              child: PageView(
+                controller: _limitCardsController,
+                padEnds: false,
+                onPageChanged: (i) => setState(() => _activeLimitCard = i),
                 children: [
-                  Text(s.accountLimitsTitle, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
-                  const SizedBox(height: RawShieldSpacing.md),
-                  _LimitRow(label: s.dailyTransferLimit, value: '5,000,000 CDF'),
-                  const SizedBox(height: RawShieldSpacing.sm),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(RawShieldRadii.full),
-                    child: Container(
-                      height: 6,
-                      color: RawShieldColors.surfaceLight,
-                      child: const FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: 0.45,
-                        child: ColoredBox(color: RawShieldColors.gold),
-                      ),
-                    ),
+                  _LimitsCard(
+                    currency: 'CDF',
+                    dailyLimit: '5,000,000 CDF',
+                    usedToday: '2,250,000 CDF',
+                    monthlyWithdrawal: '50,000,000 CDF',
+                    usedLabel: s.usedToday,
+                    progress: 0.45,
                   ),
-                  const SizedBox(height: RawShieldSpacing.xs),
-                  Text('2,250,000 CDF ${s.usedToday}', style: t.labelSmall?.copyWith(color: RawShieldColors.textMuted)),
-                  const SizedBox(height: RawShieldSpacing.md),
-                  _LimitRow(label: s.monthlyWithdrawal, value: '50,000,000 CDF'),
+                  _LimitsCard(
+                    currency: 'USD',
+                    dailyLimit: '5,000 USD',
+                    usedToday: '1,350 USD',
+                    monthlyWithdrawal: '50,000 USD',
+                    usedLabel: s.usedToday,
+                    progress: 0.27,
+                  ),
                 ],
+              ),
+            ),
+            const SizedBox(height: RawShieldSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                2,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _activeLimitCard == i ? RawShieldColors.gold : RawShieldColors.textMuted.withValues(alpha: 0.35),
+                    shape: BoxShape.circle,
+                  ),
+                ),
               ),
             ),
 
@@ -244,11 +270,107 @@ class _LimitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Text(label, style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary)),
-        Text(value, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
+          ),
+        ),
+        const SizedBox(width: RawShieldSpacing.md),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: t.bodyMedium?.copyWith(color: RawShieldColors.text),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _LimitsCard extends StatelessWidget {
+  const _LimitsCard({
+    required this.currency,
+    required this.dailyLimit,
+    required this.usedToday,
+    required this.monthlyWithdrawal,
+    required this.usedLabel,
+    required this.progress,
+  });
+
+  final String currency;
+  final String dailyLimit;
+  final String usedToday;
+  final String monthlyWithdrawal;
+  final String usedLabel;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final s = ProviderScope.containerOf(context).read(appStringsProvider);
+    return Padding(
+      padding: const EdgeInsets.only(right: RawShieldSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.all(RawShieldSpacing.lg),
+        decoration: BoxDecoration(
+          color: RawShieldColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(RawShieldRadii.xl),
+          border: Border.all(color: RawShieldColors.border),
+          boxShadow: const [
+            BoxShadow(color: Colors.black54, blurRadius: 8, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: RawShieldSpacing.sm, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color.fromRGBO(212, 175, 55, 0.20),
+                borderRadius: BorderRadius.circular(RawShieldRadii.sm),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(LucideIcons.shield, size: 14, color: RawShieldColors.gold),
+                  const SizedBox(width: RawShieldSpacing.xs),
+                  Text(
+                    'Compte $currency',
+                    style: t.labelSmall?.copyWith(color: RawShieldColors.gold),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: RawShieldSpacing.md),
+            _LimitRow(label: s.dailyTransferLimit, value: dailyLimit),
+            const SizedBox(height: RawShieldSpacing.sm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(RawShieldRadii.full),
+              child: Container(
+                height: 6,
+                color: RawShieldColors.surfaceLight,
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: const ColoredBox(color: RawShieldColors.gold),
+                ),
+              ),
+            ),
+            const SizedBox(height: RawShieldSpacing.xs),
+            Text('$usedToday $usedLabel', style: t.labelSmall?.copyWith(color: RawShieldColors.textMuted)),
+            const SizedBox(height: RawShieldSpacing.md),
+            _LimitRow(label: s.monthlyWithdrawal, value: monthlyWithdrawal),
+          ],
+        ),
+      ),
     );
   }
 }

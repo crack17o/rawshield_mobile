@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/language_globe_button.dart';
 import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
 import '../../utils/currency_utils.dart';
@@ -66,7 +67,7 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                     style: t.titleLarge?.copyWith(color: RawShieldColors.text),
                   ),
                 ),
-                const SizedBox(width: 48), // équilibre visuel avec IconButton
+                const LanguageGlobeButton(),
               ],
             ),
           ),

@@ -5,6 +5,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../app/routes.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
+import '../../providers/tab_index_provider.dart';
 import '../../theme/rawshield_theme.dart';
 import '../transfer/transfer_prefill.dart';
 import '../transactions/transaction_details_screen.dart';
@@ -59,16 +61,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: RawShieldColors.surfaceElevated,
-                          borderRadius: BorderRadius.circular(RawShieldRadii.full),
-                          border: Border.all(color: RawShieldColors.borderGold),
+                      InkWell(
+                        onTap: () => ref.read(tabIndexProvider.notifier).setIndex(3),
+                        borderRadius: BorderRadius.circular(RawShieldRadii.full),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: RawShieldColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(RawShieldRadii.full),
+                            border: Border.all(color: RawShieldColors.borderGold),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(LucideIcons.user, color: RawShieldColors.gold),
                         ),
-                        alignment: Alignment.center,
-                        child: const Icon(LucideIcons.user, color: RawShieldColors.gold),
                       ),
                       const SizedBox(width: RawShieldSpacing.md),
                       Column(
@@ -80,34 +86,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ],
                   ),
-                  InkWell(
-                    onTap: () => context.push(AppRoutes.notifications),
-                    borderRadius: BorderRadius.circular(RawShieldRadii.full),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: RawShieldColors.surface,
+                  Row(
+                    children: [
+                      const LanguageGlobeButton(),
+                      InkWell(
+                        onTap: () => context.push(AppRoutes.notifications),
                         borderRadius: BorderRadius.circular(RawShieldRadii.full),
-                      ),
-                      child: Stack(
-                        children: [
-                          const Center(child: Icon(LucideIcons.bell, color: RawShieldColors.text)),
-                          Positioned(
-                            right: 12,
-                            top: 12,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: RawShieldColors.error,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: RawShieldColors.surface,
+                            borderRadius: BorderRadius.circular(RawShieldRadii.full),
                           ),
-                        ],
+                          child: Stack(
+                            children: [
+                              const Center(child: Icon(LucideIcons.bell, color: RawShieldColors.text)),
+                              Positioned(
+                                right: 12,
+                                top: 12,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: RawShieldColors.error,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -232,7 +243,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _ActionButton(
                     icon: LucideIcons.send,
                     label: s.homeSend,
-                    bg: const Color.fromRGBO(212, 175, 55, 0.30),
+                    bg: RawShieldColors.gold,
                     fg: RawShieldColors.background,
                     onTap: () => context.push(AppRoutes.transfer),
                   ),
@@ -242,6 +253,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     bg: const Color.fromRGBO(0, 200, 83, 0.15),
                     fg: RawShieldColors.success,
                     onTap: () => context.push(AppRoutes.withdrawal),
+                  ),
+                  _ActionButton(
+                    icon: LucideIcons.fileText,
+                    label: s.homeStatement,
+                    bg: const Color.fromRGBO(33, 150, 243, 0.18),
+                    fg: RawShieldColors.info,
+                    onTap: () => context.push(AppRoutes.statement),
                   ),
                   // _ActionButton(
                   //   icon: LucideIcons.receipt,
@@ -263,7 +281,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _frequentHomeContacts.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: RawShieldSpacing.md),
+                  separatorBuilder: (_, _) => const SizedBox(width: RawShieldSpacing.md),
                   itemBuilder: (_, i) => Column(
                     children: [
                       InkWell(

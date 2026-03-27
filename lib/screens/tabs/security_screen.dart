@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../security/security_identity_sheet.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../services/app_prefs.dart';
 import '../../theme/rawshield_theme.dart';
 
@@ -228,26 +229,33 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(RawShieldSpacing.lg),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(a.icon, color: a.color, size: 22),
-                    const SizedBox(width: RawShieldSpacing.sm),
-                    Expanded(
-                      child: Text(a.title, style: t.titleLarge?.copyWith(color: RawShieldColors.text)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: RawShieldSpacing.xs),
-                Text(a.time, style: t.labelSmall?.copyWith(color: RawShieldColors.textMuted)),
-                const SizedBox(height: RawShieldSpacing.md),
-                Text(a.subtitle, style: t.bodyMedium?.copyWith(color: RawShieldColors.textSecondary)),
-                const SizedBox(height: RawShieldSpacing.md),
-                Text(a.detail, style: t.bodyMedium?.copyWith(color: RawShieldColors.text, height: 1.45)),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(a.icon, color: a.color, size: 22),
+                      const SizedBox(width: RawShieldSpacing.sm),
+                      Expanded(
+                        child: Text(a.title, style: t.titleLarge?.copyWith(color: RawShieldColors.text)),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close, color: RawShieldColors.textMuted),
+                        tooltip: 'Fermer',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: RawShieldSpacing.xs),
+                  Text(a.time, style: t.labelSmall?.copyWith(color: RawShieldColors.textMuted)),
+                  const SizedBox(height: RawShieldSpacing.md),
+                  Text(a.subtitle, style: t.bodyMedium?.copyWith(color: RawShieldColors.textSecondary)),
+                  const SizedBox(height: RawShieldSpacing.md),
+                  Text(a.detail, style: t.bodyMedium?.copyWith(color: RawShieldColors.text, height: 1.45)),
+                ],
+              ),
             ),
           ),
         );
@@ -271,7 +279,14 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             RawShieldSpacing.lg,
           ),
           children: [
-            Text(s.secTitle, style: t.headlineMedium?.copyWith(color: RawShieldColors.text)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(s.secTitle, style: t.headlineMedium?.copyWith(color: RawShieldColors.text)),
+                ),
+                const LanguageGlobeButton(),
+              ],
+            ),
             const SizedBox(height: RawShieldSpacing.lg),
 
             Container(
@@ -560,8 +575,9 @@ class _AlertTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final a = alert;
+    final borderColor = a.color.withValues(alpha: 0.35);
     return Material(
-      color: RawShieldColors.surface,
+      color: RawShieldColors.surfaceElevated,
       borderRadius: BorderRadius.circular(RawShieldRadii.lg),
       child: InkWell(
         onTap: onTap,
@@ -570,7 +586,7 @@ class _AlertTile extends StatelessWidget {
           padding: const EdgeInsets.all(RawShieldSpacing.md),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(RawShieldRadii.lg),
-            border: Border.all(color: RawShieldColors.border),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             children: [

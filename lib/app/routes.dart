@@ -4,6 +4,7 @@ class AppRoutes {
   static const login = '/login';
   static const tabs = '/tabs';
   static const notifications = '/notifications';
+  static const statement = '/statement';
   static const transfer = '/transfer';
   static const withdrawal = '/withdrawal';
   static const transactionDetails = '/transaction-details';

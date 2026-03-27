@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../app/routes.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 import '../../utils/currency_utils.dart';
 import 'transfer_state.dart';
@@ -42,6 +43,10 @@ class TransferResultScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(RawShieldSpacing.lg),
           child: Column(
             children: [
+              const Align(
+                alignment: Alignment.centerRight,
+                child: LanguageGlobeButton(),
+              ),
               const SizedBox(height: RawShieldSpacing.xl),
               Container(
                 width: 88,

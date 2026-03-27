@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_strings.dart';
+import '../l10n/language_globe_button.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/tabs/tabs_shell.dart';
 import '../screens/transfer/transfer_flow.dart';
@@ -13,6 +14,7 @@ import '../screens/startup/startup_gate.dart';
 import 'routes.dart';
 import '../screens/transfer/transfer_prefill.dart';
 import '../screens/transactions/transaction_details_screen.dart';
+import '../screens/statement/statement_screen.dart';
 import '../screens/profile/personal_info_screen.dart';
 import '../screens/profile/settings_screen.dart';
 import '../screens/profile/help_support_screen.dart';
@@ -41,6 +43,10 @@ GoRouter createRouter() {
       GoRoute(
         path: AppRoutes.notifications,
         pageBuilder: (context, state) => const MaterialPage(child: NotificationsScreen()),
+      ),
+      GoRoute(
+        path: AppRoutes.statement,
+        pageBuilder: (context, state) => const MaterialPage(child: StatementScreen()),
       ),
       GoRoute(
         path: AppRoutes.transfer,
@@ -101,6 +107,7 @@ class _RouterErrorPage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Align(alignment: Alignment.centerRight, child: Padding(padding: EdgeInsets.all(12), child: LanguageGlobeButton())),
             const Icon(Icons.error_outline, size: 42),
             const SizedBox(height: 12),
             Text(

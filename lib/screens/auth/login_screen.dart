@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../app/routes.dart';
 import '../../auth/biometric_auth.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../services/app_prefs.dart';
 import '../../theme/rawshield_theme.dart';
 
@@ -89,6 +90,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: const LanguageGlobeButton(),
+                ),
                 Column(
                   children: [
                     Container(

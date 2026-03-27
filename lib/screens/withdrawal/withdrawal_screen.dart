@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 import '../../utils/currency_utils.dart';
 import '../transfer/transfer_plafond_utils.dart';
@@ -26,6 +27,74 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   bool _copied = false;
   Timer? _t;
   int? _selectedAmountCdf;
+
+  Future<void> _pickCustomAmount() async {
+    final s = ref.read(appStringsProvider);
+    final controller = TextEditingController();
+    final t = Theme.of(context).textTheme;
+
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: RawShieldColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(RawShieldRadii.xl)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            RawShieldSpacing.lg,
+            RawShieldSpacing.lg,
+            RawShieldSpacing.lg,
+            MediaQuery.of(ctx).viewInsets.bottom + RawShieldSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(s.wCustomAmount, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
+              const SizedBox(height: RawShieldSpacing.md),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(hintText: s.wCustomAmountHint),
+                style: const TextStyle(color: RawShieldColors.text),
+              ),
+              const SizedBox(height: RawShieldSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton(
+                  onPressed: () {
+                    final raw = controller.text.replaceAll(RegExp(r'[^0-9]'), '');
+                    final v = int.tryParse(raw);
+                    if (v == null || v <= 0) return;
+                    final cdf = _debitCurrency == CurrencyUtils.usd ? CurrencyUtils.toCdfFrom(CurrencyUtils.usd, v) : v;
+                    Navigator.of(ctx).pop(cdf);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: RawShieldColors.gold,
+                    foregroundColor: RawShieldColors.background,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
+                  ),
+                  child: Text(s.wUseThisAmount),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    controller.dispose();
+    if (!mounted) return;
+    if (picked == null) return;
+    if (picked <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.wCustomAmountInvalid)));
+      return;
+    }
+    setState(() => _selectedAmountCdf = picked);
+  }
 
   @override
   void dispose() {
@@ -154,7 +223,7 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                       style: t.titleLarge?.copyWith(color: RawShieldColors.text),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const LanguageGlobeButton(),
                 ],
               ),
             ),
@@ -220,16 +289,25 @@ class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
                     Wrap(
                       spacing: RawShieldSpacing.md,
                       runSpacing: RawShieldSpacing.md,
-                      children: [10000, 20000, 50000, 100000, 200000, 500000]
+                      children: [10000, 20000, 50000, 100000, 200000, 500000, -1]
                           .map((cdfAmount) {
-                            final isSelected = _selectedAmountCdf == cdfAmount;
-                            final label = _debitCurrency == CurrencyUtils.usd
-                                ? '${CurrencyUtils.fromCdfTo(CurrencyUtils.usd, cdfAmount).toStringAsFixed(2)} USD'
-                                : '$cdfAmount CDF';
+                            final isCustom = cdfAmount == -1;
+                            final isSelected = isCustom ? false : _selectedAmountCdf == cdfAmount;
+                            final label = isCustom
+                                ? s.wCustomAmount
+                                : (_debitCurrency == CurrencyUtils.usd
+                                    ? '${CurrencyUtils.fromCdfTo(CurrencyUtils.usd, cdfAmount).toStringAsFixed(2)} USD'
+                                    : '$cdfAmount CDF');
                             return _AmountChip(
                               label: label,
                               active: isSelected,
-                              onTap: () => setState(() => _selectedAmountCdf = cdfAmount),
+                              onTap: () {
+                                if (isCustom) {
+                                  _pickCustomAmount();
+                                } else {
+                                  setState(() => _selectedAmountCdf = cdfAmount);
+                                }
+                              },
                             );
                           })
                           .toList(),

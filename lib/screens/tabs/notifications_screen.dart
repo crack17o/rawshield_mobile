@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -34,6 +35,7 @@ class NotificationsScreen extends ConsumerWidget {
                       style: t.headlineMedium?.copyWith(color: RawShieldColors.text),
                     ),
                   ),
+                  const LanguageGlobeButton(),
                   TextButton(
                     onPressed: () {},
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),

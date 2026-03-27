@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/routes.dart';
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 import '../transactions/transaction_details_screen.dart';
 
@@ -26,6 +27,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         (s.historyFilterReceived, 'received'),
         (s.historyFilterWithdrawal, 'withdrawal'),
         (s.historyFilterBill, 'bill'),
+        (s.historyFilterBlocked, 'blocked'),
+        (s.historyFilterPendingAdmin, 'pending_admin'),
+        (s.historyFilterSuccess, 'success'),
       ];
 
   @override
@@ -45,7 +49,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 RawShieldSpacing.lg,
                 RawShieldSpacing.md,
               ),
-              child: Text(s.historyTitle, style: t.headlineMedium?.copyWith(color: RawShieldColors.text)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(s.historyTitle, style: t.headlineMedium?.copyWith(color: RawShieldColors.text)),
+                  ),
+                  const LanguageGlobeButton(),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: RawShieldSpacing.lg),
@@ -180,7 +191,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ..._mockRows(s)
                       .where((r) =>
                           (_query.isEmpty || r.title.toLowerCase().contains(_query.toLowerCase())) &&
-                          (_filter == 'all' || r.type == _filter))
+                          (_filter == 'all' || r.type == _filter || r.status == _filter))
                       .map((r) => _TxnItem(row: r, strings: s)),
                 ],
               ),
@@ -193,11 +204,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   List<_TxnRowModel> _mockRows(AppStrings s) {
     return [
-      _TxnRowModel(type: 'sent', title: 'Marie Kabongo', subtitle: s.mockTxFriendly, amount: '-50,000 CDF'),
-      _TxnRowModel(type: 'received', title: s.commonYou, subtitle: s.mockTxInvoice, amount: '+150,000 CDF'),
-      _TxnRowModel(type: 'withdrawal', title: s.mockWithdrawalSender, subtitle: s.mockLocationGareCentrale, amount: '-100,000 CDF'),
-      _TxnRowModel(type: 'sent', title: 'Pierre Ilunga', subtitle: s.mockTxGoods, amount: '-250,000 CDF'),
-      _TxnRowModel(type: 'bill', title: s.mockCompanySnel, subtitle: s.mockTxElectricity, amount: '-45,000 CDF'),
+      _TxnRowModel(type: 'sent', status: 'success', title: 'Marie Kabongo', subtitle: s.mockTxFriendly, amount: '-50,000 CDF'),
+      _TxnRowModel(type: 'received', status: 'success', title: s.commonYou, subtitle: s.mockTxInvoice, amount: '+150,000 CDF'),
+      _TxnRowModel(type: 'withdrawal', status: 'pending_admin', title: s.mockWithdrawalSender, subtitle: s.mockLocationGareCentrale, amount: '-100,000 CDF'),
+      _TxnRowModel(type: 'sent', status: 'blocked', title: 'Pierre Ilunga', subtitle: s.mockTxGoods, amount: '-250,000 CDF'),
+      _TxnRowModel(type: 'bill', status: 'success', title: s.mockCompanySnel, subtitle: s.mockTxElectricity, amount: '-45,000 CDF'),
     ];
   }
 }
@@ -257,7 +268,11 @@ class _TxnItem extends StatelessWidget {
           status: row.subtitle,
           riskScore: row.amount.startsWith('-') ? 55 : 15,
           modelConfidence: row.amount.startsWith('-') ? 72 : 91,
-          decision: row.amount.startsWith('-') ? s.decisionVerify : s.decisionAuth,
+          decision: row.status == 'blocked'
+              ? s.tfStepBlocage
+              : row.status == 'pending_admin'
+                  ? s.tfStepPending
+                  : s.decisionAuth,
           dateLabel: s.historyTimeAgo,
           location: row.type == 'withdrawal' ? s.mockLocationGareCentrale : 'Kinshasa',
           sender: row.type == 'received' ? row.title : s.commonYou,
@@ -313,9 +328,10 @@ class _TxnItem extends StatelessWidget {
 }
 
 class _TxnRowModel {
-  const _TxnRowModel({required this.type, required this.title, required this.subtitle, required this.amount});
+  const _TxnRowModel({required this.type, required this.status, required this.title, required this.subtitle, required this.amount});
 
   final String type;
+  final String status;
   final String title;
   final String subtitle;
   final String amount;

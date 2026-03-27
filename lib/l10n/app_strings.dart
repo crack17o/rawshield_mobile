@@ -81,9 +81,20 @@ class AppStrings {
   String get homeExpires => _t('Expire 12/27', 'Expires 12/27', 'Ekoki 12/27');
   String get homeSend => _t('Envoyer', 'Send', 'Tinda');
   String get homeWithdraw => _t('Retirer', 'Withdraw', 'Bimisa');
+  String get homeStatement => _t('Relevé', 'Statement', 'Relevé');
   String get homeFrequentContacts => _t('Contacts fréquents', 'Frequent contacts', 'Bato oyo mbala mingi');
   String get homeRecentTx => _t('Transactions récentes', 'Recent transactions', 'Transactions ya sika');
   String get homeSeeAll => _t('Voir tout', 'See all', 'Mona nyonso');
+
+  // ——— Relevé ———
+  String get statementTitle => _t('Relevé', 'Statement', 'Relevé');
+  String get statementChooseRange => _t('Choisir la période', 'Choose period', 'Pona eleko');
+  String get statementRange7d => _t('7 jours', '7 days', 'Mikolo 7');
+  String get statementRange30d => _t('30 jours', '30 days', 'Mikolo 30');
+  String get statementRange3m => _t('3 mois', '3 months', 'Sanza 3');
+  String get statementRange6m => _t('6 mois', '6 months', 'Sanza 6');
+  String get statementRequest => _t('Demander le relevé', 'Request statement', 'Senga relevé');
+  String get statementRequestedSnack => _t('Relevé demandé (simulation).', 'Statement requested (simulation).', 'Relevé esengami (simulation).');
 
   // ——— Historique ———
   String get historyTitle => _t('Historique', 'History', 'Makambo ya kala');
@@ -93,6 +104,9 @@ class AppStrings {
   String get historyFilterReceived => _t('Reçu', 'Received', 'Ozwi');
   String get historyFilterWithdrawal => _t('Retrait', 'Withdrawal', 'Kobimisa');
   String get historyFilterBill => _t('Facture', 'Bill', 'Facture');
+  String get historyFilterBlocked => _t('Bloquée', 'Blocked', 'Eye longoli');
+  String get historyFilterPendingAdmin => _t('En attente (admin)', 'Pending (admin)', 'Na ntango (admin)');
+  String get historyFilterSuccess => _t('Réussie', 'Successful', 'Elongi');
   String get historyStatsIn => _t('Entrées', 'In', 'Kokota');
   String get historyStatsOut => _t('Sorties', 'Out', 'Kobima');
   String get historyAllTransactions => _t('Toutes les transactions', 'All transactions', 'Transactions nyonso');
@@ -282,6 +296,10 @@ class AppStrings {
   String get wModeAtm => _t('Distributeur (ATM)', 'ATM', 'ATM');
   String get wModeAgent => _t('Agent', 'Agent', 'Agent');
   String get wAmountToWithdraw => _t('Montant à retirer', 'Amount to withdraw', 'Mbongo oyo obimisa');
+  String get wCustomAmount => _t('Montant perso', 'Custom amount', 'Mbongo na yo');
+  String get wCustomAmountHint => _t('Entrez un montant', 'Enter an amount', 'Tia mbongo');
+  String get wCustomAmountInvalid => _t('Montant invalide.', 'Invalid amount.', 'Mbongo malamu te.');
+  String get wUseThisAmount => _t('Utiliser ce montant', 'Use this amount', 'Salela mbongo oyo');
   String get wBannerNotAllowed => _t('Retrait non autorisé', 'Withdrawal not allowed', 'Kobimisa eye longoli te');
   String wBannerPlafondBody(String plafondLabel) => _t(
         'Le montant dépasse le plafond autorisé de votre compte ($plafondLabel). Pour un élargissement, rendez-vous auprès de nos agences.',

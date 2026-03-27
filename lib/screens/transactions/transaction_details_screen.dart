@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_strings.dart';
+import '../../l10n/language_globe_button.dart';
 import '../../theme/rawshield_theme.dart';
 
 class TransactionDetails {
@@ -77,7 +78,7 @@ class _TransactionDetailsScreenState extends ConsumerState<TransactionDetailsScr
                       style: t.titleLarge?.copyWith(color: RawShieldColors.text),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  const LanguageGlobeButton(),
                 ],
               ),
             ),

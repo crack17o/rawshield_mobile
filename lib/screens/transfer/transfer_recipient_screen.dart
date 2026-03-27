@@ -240,7 +240,7 @@ class _TransferRecipientScreenState extends ConsumerState<TransferRecipientScree
                 Text(s.homeFrequentContacts, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
                 const SizedBox(height: RawShieldSpacing.md),
                 SizedBox(
-                  height: 96,
+                  height: 104,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
@@ -370,6 +370,7 @@ class _ContactChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(RawShieldRadii.lg),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 64,
@@ -397,7 +398,7 @@ class _ContactChip extends StatelessWidget {
             ),
             if (selected)
               Container(
-                margin: const EdgeInsets.only(top: 6),
+                margin: const EdgeInsets.only(top: 4),
                 width: 6,
                 height: 6,
                 decoration: const BoxDecoration(color: RawShieldColors.gold, shape: BoxShape.circle),
