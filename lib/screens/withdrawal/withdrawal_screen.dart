@@ -1,24 +1,31 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
+import '../../utils/currency_utils.dart';
+import '../transfer/transfer_plafond_utils.dart';
+import '../transfer/transfer_risk_utils.dart';
 
-class WithdrawalScreen extends StatefulWidget {
+class WithdrawalScreen extends ConsumerStatefulWidget {
   const WithdrawalScreen({super.key});
 
   @override
-  State<WithdrawalScreen> createState() => _WithdrawalScreenState();
+  ConsumerState<WithdrawalScreen> createState() => _WithdrawalScreenState();
 }
 
-class _WithdrawalScreenState extends State<WithdrawalScreen> {
+class _WithdrawalScreenState extends ConsumerState<WithdrawalScreen> {
   String _mode = 'atm';
+  String _debitCurrency = CurrencyUtils.cdf;
   bool _generated = false;
   int _timer = 600;
   bool _copied = false;
   Timer? _t;
+  int? _selectedAmountCdf;
 
   @override
   void dispose() {
@@ -27,6 +34,48 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   }
 
   void _generateCode() {
+    final selectedAmountCdf = _selectedAmountCdf;
+    if (selectedAmountCdf == null) return;
+
+    final userPlafondCdf = TransferPlafondUtils.userPlafondCdf(debitCurrency: _debitCurrency);
+    final isPlafondExceeded = selectedAmountCdf > userPlafondCdf;
+    final riskScore = TransferRiskUtils.computeRiskScore(amountCdf: selectedAmountCdf);
+    final riskLevel = TransferRiskUtils.getRiskLevel(riskScore);
+    final isBlocked = riskLevel == TransferRiskLevel.veryHigh;
+    final isPending = riskLevel == TransferRiskLevel.high;
+
+    final s = ref.read(appStringsProvider);
+    if (isPlafondExceeded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            s.wPlafondSnack,
+          ),
+        ),
+      );
+      return;
+    }
+    if (isPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            s.wPendingSnack,
+          ),
+        ),
+      );
+      return;
+    }
+    if (isBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            s.wBlockedSnack,
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _generated = true;
       _timer = 600;
@@ -59,7 +108,23 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final s = ref.watch(appStringsProvider);
     const code = '843927';
+
+    final selectedAmountCdf = _selectedAmountCdf;
+    final userPlafondCdf = TransferPlafondUtils.userPlafondCdf(debitCurrency: _debitCurrency);
+    final isPlafondExceeded = selectedAmountCdf != null && selectedAmountCdf > userPlafondCdf;
+    final riskScore = TransferRiskUtils.computeRiskScore(amountCdf: selectedAmountCdf);
+    final riskLevel = TransferRiskUtils.getRiskLevel(riskScore);
+    final isBlocked = riskLevel == TransferRiskLevel.veryHigh;
+    final isPending = riskLevel == TransferRiskLevel.high;
+    final canGenerate = !_generated &&
+        selectedAmountCdf != null &&
+        !isPlafondExceeded &&
+        !isBlocked &&
+        !isPending;
+
+    final plafondLabel = TransferPlafondUtils.userPlafondLabel(debitCurrency: _debitCurrency);
 
     return Dialog.fullscreen(
       backgroundColor: RawShieldColors.background,
@@ -83,7 +148,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                   ),
                   Expanded(
                     child: Text(
-                      'Retrait',
+                      s.wTitle,
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       style: t.titleLarge?.copyWith(color: RawShieldColors.text),
@@ -97,14 +162,14 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: RawShieldSpacing.lg),
                 children: [
-                  Text('Choisir le mode de retrait', style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+                  Text(s.wChooseMode, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
                   const SizedBox(height: RawShieldSpacing.md),
                   Row(
                     children: [
                       Expanded(
                         child: _ModeButton(
                           icon: LucideIcons.mapPin,
-                          label: 'Distributeur (ATM)',
+                          label: s.wModeAtm,
                           active: _mode == 'atm',
                           onTap: () => setState(() => _mode = 'atm'),
                         ),
@@ -113,7 +178,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                       Expanded(
                         child: _ModeButton(
                           icon: LucideIcons.user,
-                          label: 'Agent',
+                          label: s.wModeAgent,
                           active: _mode == 'agent',
                           onTap: () => setState(() => _mode = 'agent'),
                         ),
@@ -122,30 +187,157 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                   ),
                   const SizedBox(height: RawShieldSpacing.xl),
                   if (!_generated) ...[
-                    Text('Montant à retirer', style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+                    Container(
+                      padding: const EdgeInsets.all(RawShieldSpacing.md),
+                      decoration: BoxDecoration(
+                        color: RawShieldColors.surface,
+                        borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+                        border: Border.all(color: RawShieldColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _CurrencyToggle(
+                              label: 'CDF',
+                              active: _debitCurrency == CurrencyUtils.cdf,
+                              onTap: () => setState(() => _debitCurrency = CurrencyUtils.cdf),
+                            ),
+                          ),
+                          const SizedBox(width: RawShieldSpacing.md),
+                          Expanded(
+                            child: _CurrencyToggle(
+                              label: 'USD',
+                              active: _debitCurrency == CurrencyUtils.usd,
+                              onTap: () => setState(() => _debitCurrency = CurrencyUtils.usd),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: RawShieldSpacing.lg),
+                    Text(s.wAmountToWithdraw, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
                     const SizedBox(height: RawShieldSpacing.md),
                     Wrap(
                       spacing: RawShieldSpacing.md,
                       runSpacing: RawShieldSpacing.md,
-                      children: ['10000', '20000', '50000', '100000', '200000', '500000']
-                          .map((a) => _AmountChip(amount: a))
+                      children: [10000, 20000, 50000, 100000, 200000, 500000]
+                          .map((cdfAmount) {
+                            final isSelected = _selectedAmountCdf == cdfAmount;
+                            final label = _debitCurrency == CurrencyUtils.usd
+                                ? '${CurrencyUtils.fromCdfTo(CurrencyUtils.usd, cdfAmount).toStringAsFixed(2)} USD'
+                                : '$cdfAmount CDF';
+                            return _AmountChip(
+                              label: label,
+                              active: isSelected,
+                              onTap: () => setState(() => _selectedAmountCdf = cdfAmount),
+                            );
+                          })
                           .toList(),
                     ),
+                    const SizedBox(height: RawShieldSpacing.lg),
+                    if (selectedAmountCdf != null) ...[
+                      if (isPlafondExceeded)
+                        Container(
+                          padding: const EdgeInsets.all(RawShieldSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(255, 61, 0, 0.10),
+                            borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+                            border: Border.all(color: RawShieldColors.error),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(LucideIcons.alertTriangle, size: 18, color: RawShieldColors.error),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerNotAllowed,
+                                style: t.titleMedium?.copyWith(color: RawShieldColors.error),
+                              ),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerPlafondBody(plafondLabel),
+                                style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (isPending)
+                        Container(
+                          padding: const EdgeInsets.all(RawShieldSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(255, 179, 0, 0.10),
+                            borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+                            border: Border.all(color: RawShieldColors.warning),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(LucideIcons.alertTriangle, size: 18, color: RawShieldColors.warning),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerPendingTitle,
+                                style: t.titleMedium?.copyWith(color: RawShieldColors.warning),
+                              ),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerPendingBody(riskScore),
+                                style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (isBlocked)
+                        Container(
+                          padding: const EdgeInsets.all(RawShieldSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: const Color.fromRGBO(255, 61, 0, 0.10),
+                            borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+                            border: Border.all(color: RawShieldColors.error),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(LucideIcons.alertTriangle, size: 18, color: RawShieldColors.error),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerBlockedTitle,
+                                style: t.titleMedium?.copyWith(color: RawShieldColors.error),
+                              ),
+                              const SizedBox(height: RawShieldSpacing.sm),
+                              Text(
+                                s.wBannerBlockedBody(riskScore),
+                                style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                     const SizedBox(height: RawShieldSpacing.lg),
                     SizedBox(
                       width: double.infinity,
                       height: 52,
                       child: FilledButton(
-                        onPressed: _generateCode,
+                        onPressed: canGenerate ? _generateCode : null,
                         style: FilledButton.styleFrom(
                           backgroundColor: RawShieldColors.gold,
                           foregroundColor: RawShieldColors.background,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                         ),
-                        child: const Text('Générer le code de retrait'),
+                        child: Text(s.wGenerateCode),
                       ),
                     ),
                   ] else ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: RawShieldSpacing.md),
+                      child: Text(
+                        _selectedAmountCdf == null
+                            ? s.wAmountDash
+                            : _debitCurrency == CurrencyUtils.usd
+                                ? s.wAmountUsd(CurrencyUtils.fromCdfTo(CurrencyUtils.usd, _selectedAmountCdf!).toStringAsFixed(2))
+                                : s.wAmountCdf('$_selectedAmountCdf'),
+                        style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
+                      ),
+                    ),
                     Container(
                       padding: const EdgeInsets.all(RawShieldSpacing.lg),
                       decoration: BoxDecoration(
@@ -155,31 +347,38 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                       ),
                       child: Column(
                         children: [
-                          Text('Code de retrait', style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary)),
+                          Text(s.wWithdrawalCodeLabel, style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary)),
                           const SizedBox(height: RawShieldSpacing.md),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: code
-                                .split('')
-                                .map((d) => Container(
-                                      width: 44,
-                                      height: 52,
-                                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                                      decoration: BoxDecoration(
-                                        color: RawShieldColors.surface,
-                                        borderRadius: BorderRadius.circular(RawShieldRadii.md),
-                                        border: Border.all(color: RawShieldColors.border),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(d, style: t.titleLarge?.copyWith(color: RawShieldColors.text)),
-                                    ))
-                                .toList(),
+                          // Évite le débordement horizontal sur petits écrans
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: code
+                                  .split('')
+                                  .map((d) => Container(
+                                        width: 44,
+                                        height: 52,
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        decoration: BoxDecoration(
+                                          color: RawShieldColors.surface,
+                                          borderRadius: BorderRadius.circular(RawShieldRadii.md),
+                                          border: Border.all(color: RawShieldColors.border),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          d,
+                                          style: t.titleLarge?.copyWith(color: RawShieldColors.text),
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
                           ),
                           const SizedBox(height: RawShieldSpacing.md),
                           TextButton.icon(
                             onPressed: _copy,
                             icon: Icon(_copied ? LucideIcons.check : LucideIcons.copy, color: _copied ? RawShieldColors.success : RawShieldColors.gold),
-                            label: Text(_copied ? 'Copié !' : 'Copier le code', style: t.bodySmall?.copyWith(color: RawShieldColors.gold)),
+                            label: Text(_copied ? s.wCopied : s.wCopyCode, style: t.bodySmall?.copyWith(color: RawShieldColors.gold)),
                           ),
                           const SizedBox(height: RawShieldSpacing.sm),
                           Row(
@@ -188,7 +387,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                               Icon(LucideIcons.clock, size: 16, color: _timer < 60 ? RawShieldColors.error : RawShieldColors.warning),
                               const SizedBox(width: RawShieldSpacing.sm),
                               Text(
-                                'Expire dans ${_formatTime(_timer)}',
+                                s.wExpiresIn(_formatTime(_timer)),
                                 style: t.bodySmall?.copyWith(color: _timer < 60 ? RawShieldColors.error : RawShieldColors.warning),
                               ),
                             ],
@@ -207,12 +406,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Instructions', style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
+                          Text(s.wInstructions, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
                           const SizedBox(height: RawShieldSpacing.md),
-                          _Step(number: '1', text: 'Rendez-vous au ${_mode == 'atm' ? 'distributeur' : 'point agent'} le plus proche'),
-                          _Step(number: '2', text: 'Sélectionnez \"Retrait sans carte\"'),
-                          _Step(number: '3', text: 'Saisissez le code de retrait'),
-                          _Step(number: '4', text: 'Récupérez votre argent'),
+                          _Step(number: '1', text: _mode == 'atm' ? s.wStepAtm1 : s.wStepAgent1),
+                          _Step(number: '2', text: s.wStep2),
+                          _Step(number: '3', text: s.wStep3),
+                          _Step(number: '4', text: s.wStep4),
                         ],
                       ),
                     ),
@@ -225,7 +424,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                         minimumSize: const Size.fromHeight(52),
                       ),
-                      child: const Text('Générer un nouveau code'),
+                      child: Text(s.wGenerateNewCode),
                     ),
                   ],
                   const SizedBox(height: RawShieldSpacing.lg),
@@ -241,7 +440,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
                         const SizedBox(width: RawShieldSpacing.sm),
                         Expanded(
                           child: Text(
-                            'Ne partagez jamais ce code avec qui que ce soit.',
+                            s.wNeverShareCode,
                             style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
                           ),
                         ),
@@ -303,23 +502,70 @@ class _ModeButton extends StatelessWidget {
 }
 
 class _AmountChip extends StatelessWidget {
-  const _AmountChip({required this.amount});
+  const _AmountChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
 
-  final String amount;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return Container(
-      width: (MediaQuery.of(context).size.width - RawShieldSpacing.lg * 2 - RawShieldSpacing.md) / 2,
-      padding: const EdgeInsets.symmetric(vertical: RawShieldSpacing.md),
-      decoration: BoxDecoration(
-        color: RawShieldColors.surface,
-        borderRadius: BorderRadius.circular(RawShieldRadii.md),
-        border: Border.all(color: RawShieldColors.border),
+    return InkWell(
+      borderRadius: BorderRadius.circular(RawShieldRadii.md),
+      onTap: onTap,
+      child: Container(
+        width: (MediaQuery.of(context).size.width - RawShieldSpacing.lg * 2 - RawShieldSpacing.md) / 2,
+        padding: const EdgeInsets.symmetric(vertical: RawShieldSpacing.md),
+        decoration: BoxDecoration(
+          color: active ? const Color.fromRGBO(212, 175, 55, 0.25) : RawShieldColors.surface,
+          borderRadius: BorderRadius.circular(RawShieldRadii.md),
+          border: Border.all(color: active ? RawShieldColors.gold : RawShieldColors.border),
+        ),
+        alignment: Alignment.center,
+        child: Text(label, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
       ),
-      alignment: Alignment.center,
-      child: Text('${amount} CDF', style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+    );
+  }
+}
+
+class _CurrencyToggle extends StatelessWidget {
+  const _CurrencyToggle({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: RawShieldSpacing.md, horizontal: RawShieldSpacing.md),
+        decoration: BoxDecoration(
+          color: active ? const Color.fromRGBO(212, 175, 55, 0.25) : RawShieldColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+          border: Border.all(color: active ? RawShieldColors.gold : RawShieldColors.border),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: t.bodyMedium?.copyWith(
+            color: active ? RawShieldColors.gold : RawShieldColors.textSecondary,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

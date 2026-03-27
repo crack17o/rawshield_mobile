@@ -6,24 +6,28 @@ class TransferDraft {
     this.recipientPhone,
     this.amountCdf,
     this.note,
+    this.debitCurrency = 'CDF',
   });
 
   final String? recipientName;
   final String? recipientPhone;
   final int? amountCdf;
   final String? note;
+  final String debitCurrency;
 
   TransferDraft copyWith({
     String? recipientName,
     String? recipientPhone,
     int? amountCdf,
     String? note,
+    String? debitCurrency,
   }) {
     return TransferDraft(
       recipientName: recipientName ?? this.recipientName,
       recipientPhone: recipientPhone ?? this.recipientPhone,
       amountCdf: amountCdf ?? this.amountCdf,
       note: note ?? this.note,
+      debitCurrency: debitCurrency ?? this.debitCurrency,
     );
   }
 }
@@ -44,6 +48,10 @@ class TransferDraftNotifier extends Notifier<TransferDraft> {
 
   void setNote(String note) {
     state = state.copyWith(note: note);
+  }
+
+  void setDebitCurrency(String currency) {
+    state = state.copyWith(debitCurrency: currency);
   }
 }
 

@@ -37,6 +37,21 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Fix intermittent NDK strip issues (missing libflutter.so) by disabling stripping.
+    // This avoids Gradle calling llvm-strip on native libs during debug builds.
+    packagingOptions {
+        doNotStrip += listOf("**/*.so")
+    }
+
+    packaging {
+        jniLibs {
+            excludes += setOf("**/*.so.debug")
+        }
+        resources {
+            excludes += setOf("META-INF/*")
+        }
+    }
 }
 
 flutter {

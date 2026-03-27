@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
+import '../../utils/currency_utils.dart';
 import 'transfer_state.dart';
 
 class TransferAmountScreen extends ConsumerStatefulWidget {
@@ -32,8 +34,10 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final s = ref.watch(appStringsProvider);
     final draft = ref.watch(transferDraftProvider);
     final canContinue = (_amount ?? 0) > 0;
+    final debitCurrency = draft.debitCurrency;
 
     return Scaffold(
       backgroundColor: RawShieldColors.background,
@@ -56,7 +60,7 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                 ),
                 Expanded(
                   child: Text(
-                    "Envoyer de l'argent",
+                    s.transferSendMoney,
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                     style: t.titleLarge?.copyWith(color: RawShieldColors.text),
@@ -84,7 +88,7 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                   ),
                 ),
                 const SizedBox(height: RawShieldSpacing.sm),
-                Text('Étape 2 sur 5 : Montant', style: t.labelSmall?.copyWith(color: RawShieldColors.textSecondary)),
+                Text(s.tfWizStep2, style: t.labelSmall?.copyWith(color: RawShieldColors.textSecondary)),
               ],
             ),
           ),
@@ -93,6 +97,35 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: RawShieldSpacing.lg),
               children: [
+                // Choix du compte à débiter (USD/CDF)
+                Container(
+                  padding: const EdgeInsets.all(RawShieldSpacing.md),
+                  decoration: BoxDecoration(
+                    color: RawShieldColors.surface,
+                    borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+                    border: Border.all(color: RawShieldColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _CurrencyToggle(
+                          label: 'CDF',
+                          active: debitCurrency == CurrencyUtils.cdf,
+                          onTap: () => ref.read(transferDraftProvider.notifier).setDebitCurrency(CurrencyUtils.cdf),
+                        ),
+                      ),
+                      const SizedBox(width: RawShieldSpacing.md),
+                      Expanded(
+                        child: _CurrencyToggle(
+                          label: 'USD',
+                          active: debitCurrency == CurrencyUtils.usd,
+                          onTap: () => ref.read(transferDraftProvider.notifier).setDebitCurrency(CurrencyUtils.usd),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: RawShieldSpacing.lg),
                 Container(
                   padding: const EdgeInsets.all(RawShieldSpacing.md),
                   decoration: BoxDecoration(
@@ -106,7 +139,7 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                       const SizedBox(width: RawShieldSpacing.sm),
                       Expanded(
                         child: Text(
-                          draft.recipientName ?? 'Destinataire',
+                          draft.recipientName ?? s.transferRecipientTitle,
                           style: t.bodyMedium?.copyWith(color: RawShieldColors.text),
                         ),
                       ),
@@ -118,24 +151,24 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                   ),
                 ),
                 const SizedBox(height: RawShieldSpacing.lg),
-                Text('Montant (CDF)', style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+                Text(s.tfAmountLabel(debitCurrency), style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
                 const SizedBox(height: RawShieldSpacing.sm),
                 TextField(
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                    hintText: 'ex: 250000',
+                  decoration: InputDecoration(
+                    hintText: s.tfAmountHintEx,
                     prefixIcon: Icon(LucideIcons.coins, color: RawShieldColors.textSecondary),
                   ),
                   style: const TextStyle(color: RawShieldColors.text),
                 ),
                 const SizedBox(height: RawShieldSpacing.lg),
-                Text('Motif (optionnel)', style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
+                Text(s.tfNoteOptional, style: t.bodyMedium?.copyWith(color: RawShieldColors.text)),
                 const SizedBox(height: RawShieldSpacing.sm),
                 TextField(
                   controller: _noteController,
-                  decoration: const InputDecoration(hintText: 'ex: Transfert amical'),
+                  decoration: InputDecoration(hintText: s.tfNoteHintEx),
                   style: const TextStyle(color: RawShieldColors.text),
                 ),
                 const SizedBox(height: RawShieldSpacing.xl),
@@ -151,7 +184,7 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                       const SizedBox(width: RawShieldSpacing.sm),
                       Expanded(
                         child: Text(
-                          'RAWShield AI vérifiera la transaction avant validation.',
+                          s.tfRawShieldWillCheck,
                           style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
                         ),
                       ),
@@ -174,8 +207,9 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
               child: FilledButton(
                 onPressed: canContinue
                     ? () {
-                        final amt = _amount ?? 0;
-                        ref.read(transferDraftProvider.notifier).setAmount(amt);
+                        final amt = _amount ?? 0; // valeur saisie dans la devise affichée
+                        final amtCdf = CurrencyUtils.toCdfFrom(debitCurrency, amt);
+                        ref.read(transferDraftProvider.notifier).setAmount(amtCdf);
                         ref.read(transferDraftProvider.notifier).setNote(_noteController.text.trim());
                         Navigator.of(context).pushNamed('/confirm');
                       }
@@ -186,11 +220,48 @@ class _TransferAmountScreenState extends ConsumerState<TransferAmountScreen> {
                   disabledBackgroundColor: const Color.fromRGBO(212, 175, 55, 0.25),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                 ),
-                child: const Text('Continuer'),
+                child: Text(s.transferContinue),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CurrencyToggle extends StatelessWidget {
+  const _CurrencyToggle({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: RawShieldSpacing.md, horizontal: RawShieldSpacing.md),
+        decoration: BoxDecoration(
+          color: active ? const Color.fromRGBO(212, 175, 55, 0.25) : RawShieldColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(RawShieldRadii.lg),
+          border: Border.all(color: active ? RawShieldColors.gold : RawShieldColors.border),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: t.bodyMedium?.copyWith(
+            color: active ? RawShieldColors.gold : RawShieldColors.textSecondary,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }

@@ -7,9 +7,15 @@ import 'transfer_amount_screen.dart';
 import 'transfer_confirm_screen.dart';
 import 'transfer_otp_screen.dart';
 import 'transfer_result_screen.dart';
+import 'transfer_prefill.dart';
 
 class TransferFlow extends StatelessWidget {
-  const TransferFlow({super.key});
+  const TransferFlow({
+    super.key,
+    this.prefill,
+  });
+
+  final TransferPrefill? prefill;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +28,10 @@ class TransferFlow extends StatelessWidget {
             Widget screen;
             switch (settings.name) {
               case '/':
-                screen = const TransferRecipientScreen();
+                screen = TransferRecipientScreen(
+                  initialRecipientName: prefill?.recipientName,
+                  initialRecipientPhone: prefill?.recipientPhone,
+                );
                 break;
               case '/amount':
                 screen = const TransferAmountScreen();

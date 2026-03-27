@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/app_strings.dart';
+import '../../providers/tab_index_provider.dart';
 import '../../theme/rawshield_theme.dart';
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'security_screen.dart';
 import 'profile_screen.dart';
 
-class TabsShell extends StatefulWidget {
+class TabsShell extends ConsumerStatefulWidget {
   const TabsShell({super.key});
 
   @override
-  State<TabsShell> createState() => _TabsShellState();
+  ConsumerState<TabsShell> createState() => _TabsShellState();
 }
 
-class _TabsShellState extends State<TabsShell> {
-  int _index = 0;
-
+class _TabsShellState extends ConsumerState<TabsShell> {
   final _screens = const [
     HomeScreen(),
     HistoryScreen(),
@@ -26,8 +27,11 @@ class _TabsShellState extends State<TabsShell> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(appStringsProvider);
+    final index = ref.watch(tabIndexProvider);
+
     return Scaffold(
-      body: _screens[_index],
+      body: _screens[index],
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           backgroundColor: RawShieldColors.surfaceElevated,
@@ -38,17 +42,16 @@ class _TabsShellState extends State<TabsShell> {
         ),
         child: NavigationBar(
           height: 70,
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
-          destinations: const [
-            NavigationDestination(icon: Icon(LucideIcons.home), label: 'Accueil'),
-            NavigationDestination(icon: Icon(LucideIcons.receipt), label: 'Historique'),
-            NavigationDestination(icon: Icon(LucideIcons.shield), label: 'Sécurité'),
-            NavigationDestination(icon: Icon(LucideIcons.user), label: 'Profil'),
+          selectedIndex: index,
+          onDestinationSelected: (i) => ref.read(tabIndexProvider.notifier).setIndex(i),
+          destinations: [
+            NavigationDestination(icon: const Icon(LucideIcons.home), label: s.tabHome),
+            NavigationDestination(icon: const Icon(LucideIcons.receipt), label: s.tabHistory),
+            NavigationDestination(icon: const Icon(LucideIcons.shield), label: s.tabSecurity),
+            NavigationDestination(icon: const Icon(LucideIcons.user), label: s.tabProfile),
           ],
         ),
       ),
     );
   }
 }
-

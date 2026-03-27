@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final s = ref.watch(appStringsProvider);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -26,7 +29,7 @@ class NotificationsScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Notifications',
+                      s.notifTitle,
                       overflow: TextOverflow.ellipsis,
                       style: t.headlineMedium?.copyWith(color: RawShieldColors.text),
                     ),
@@ -35,7 +38,7 @@ class NotificationsScreen extends StatelessWidget {
                     onPressed: () {},
                     style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
                     child: Text(
-                      'Tout marquer comme lu',
+                      s.notifMarkAllRead,
                       overflow: TextOverflow.ellipsis,
                       style: t.bodySmall?.copyWith(color: RawShieldColors.gold),
                     ),
@@ -55,7 +58,7 @@ class NotificationsScreen extends StatelessWidget {
                   children: [
                     const Icon(LucideIcons.bell, size: 16, color: RawShieldColors.gold),
                     const SizedBox(width: RawShieldSpacing.sm),
-                    Text('2 notifications non lues', style: t.bodySmall?.copyWith(color: RawShieldColors.gold, fontWeight: FontWeight.w600)),
+                    Text(s.notifUnreadBanner, style: t.bodySmall?.copyWith(color: RawShieldColors.gold, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
@@ -65,33 +68,33 @@ class NotificationsScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: RawShieldSpacing.lg),
                 children: [
-                  Text("Aujourd'hui", style: t.bodyMedium?.copyWith(color: RawShieldColors.textSecondary)),
+                  Text(s.notifToday, style: t.bodyMedium?.copyWith(color: RawShieldColors.textSecondary)),
                   const SizedBox(height: RawShieldSpacing.md),
                   _NotificationItem(
                     icon: LucideIcons.shield,
                     iconColor: RawShieldColors.error,
                     bg: const Color.fromRGBO(255, 61, 0, 0.15),
-                    title: 'Transaction bloquée',
-                    message: "RAWShield AI a détecté une activité inhabituelle sur votre compte.",
-                    time: 'Il y a 5 min',
+                    title: s.notif1Title,
+                    message: s.notif1Msg,
+                    time: s.notifTime5m,
                     unread: true,
                   ),
                   _NotificationItem(
                     icon: LucideIcons.alertTriangle,
                     iconColor: RawShieldColors.warning,
                     bg: const Color.fromRGBO(255, 179, 0, 0.15),
-                    title: 'Code OTP requis',
-                    message: 'Validez votre transaction de 250,000 CDF avec le code reçu par SMS.',
-                    time: 'Il y a 1h',
+                    title: s.notif2Title,
+                    message: s.notif2Msg,
+                    time: s.notifTime1h,
                     unread: true,
                   ),
                   _NotificationItem(
                     icon: LucideIcons.check,
                     iconColor: RawShieldColors.success,
                     bg: const Color.fromRGBO(0, 200, 83, 0.15),
-                    title: 'Retrait effectué',
-                    message: 'Vous avez retiré 100,000 CDF au distributeur Gare Centrale.',
-                    time: 'Il y a 5h',
+                    title: s.notif3Title,
+                    message: s.notif3Msg,
+                    time: s.notifTime5h,
                     unread: false,
                   ),
                 ],

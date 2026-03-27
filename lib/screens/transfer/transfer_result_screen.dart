@@ -4,8 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../app/routes.dart';
+import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
+import '../../utils/currency_utils.dart';
 import 'transfer_state.dart';
+import 'transfer_risk_utils.dart';
+import 'transfer_plafond_utils.dart';
 
 class TransferResultScreen extends ConsumerWidget {
   const TransferResultScreen({super.key});
@@ -13,9 +17,23 @@ class TransferResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final s = ref.watch(appStringsProvider);
     final draft = ref.watch(transferDraftProvider);
     final amount = draft.amountCdf ?? 0;
-    final blocked = amount >= 250000;
+    final debitCurrency = draft.debitCurrency;
+    final amountInDebitCurrency = CurrencyUtils.fromCdfTo(debitCurrency, amount);
+    final amountLabel = debitCurrency == CurrencyUtils.usd
+        ? '${amountInDebitCurrency.toStringAsFixed(2)} ${CurrencyUtils.usd}'
+        : '$amount ${CurrencyUtils.cdf}';
+
+    final riskScore = TransferRiskUtils.computeRiskScore(amountCdf: draft.amountCdf);
+    final riskLevel = TransferRiskUtils.getRiskLevel(riskScore);
+
+    final isPlafondExceeded =
+        amount > TransferPlafondUtils.userPlafondCdf(debitCurrency: debitCurrency);
+
+    final blocked = isPlafondExceeded || riskLevel == TransferRiskLevel.veryHigh;
+    final delayed = !isPlafondExceeded && riskLevel == TransferRiskLevel.high;
 
     return Scaffold(
       backgroundColor: RawShieldColors.background,
@@ -31,26 +49,42 @@ class TransferResultScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: blocked
                       ? const Color.fromRGBO(255, 61, 0, 0.15)
-                      : const Color.fromRGBO(0, 200, 83, 0.15),
+                      : delayed
+                          ? const Color.fromRGBO(255, 179, 0, 0.15)
+                          : const Color.fromRGBO(0, 200, 83, 0.15),
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
                 child: Icon(
-                  blocked ? LucideIcons.alertTriangle : LucideIcons.checkCircle2,
-                  color: blocked ? RawShieldColors.error : RawShieldColors.success,
+                  blocked
+                      ? LucideIcons.alertTriangle
+                      : delayed
+                          ? LucideIcons.alertTriangle
+                          : LucideIcons.checkCircle2,
+                  color: blocked
+                      ? RawShieldColors.error
+                      : delayed
+                          ? RawShieldColors.warning
+                          : RawShieldColors.success,
                   size: 40,
                 ),
               ),
               const SizedBox(height: RawShieldSpacing.lg),
               Text(
-                blocked ? 'Transfert bloqué' : 'Transfert validé',
+                blocked
+                    ? (isPlafondExceeded ? s.trTitlePlafond : s.trTitleBlocked)
+                    : delayed
+                        ? s.trTitlePending
+                        : s.trTitleOk,
                 style: t.headlineMedium?.copyWith(color: RawShieldColors.text),
               ),
               const SizedBox(height: RawShieldSpacing.sm),
               Text(
                 blocked
-                    ? 'RAWShield AI a détecté un risque élevé sur ce transfert.'
-                    : 'Votre transfert a été traité avec succès.',
+                    ? (isPlafondExceeded ? s.trBodyPlafond : s.trBodyBlocked)
+                    : delayed
+                        ? s.trBodyPending
+                        : s.trBodyOk,
                 textAlign: TextAlign.center,
                 style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
               ),
@@ -66,12 +100,31 @@ class TransferResultScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Détails', style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
+                    Text(s.txnDetailsSection, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
                     const SizedBox(height: RawShieldSpacing.md),
-                    _row(t, 'Destinataire', draft.recipientName ?? '—'),
-                    _row(t, 'Montant', '$amount CDF'),
-                    _row(t, 'Décision', blocked ? 'Blocage automatique' : 'Autorisation'),
-                    _row(t, 'Confiance modèle', blocked ? '71%' : '94%'),
+                    _row(t, s.transferRecipientTitle, draft.recipientName ?? '—'),
+                    _row(t, s.tfRowDebitAccount, debitCurrency),
+                    _row(t, s.txnAmount, amountLabel),
+                    _row(
+                      t,
+                      s.txnDecision,
+                      blocked
+                          ? (isPlafondExceeded ? s.trOutcomeNotAllowed : s.trOutcomeAutoBlock)
+                          : delayed
+                              ? s.trOutcomeAdvDelay
+                              : s.trOutcomeAuthOk,
+                    ),
+                    _row(
+                      t,
+                      s.txnModelConfidence,
+                      blocked
+                          ? (isPlafondExceeded ? '—' : '20%')
+                          : delayed
+                              ? '55%'
+                              : riskLevel == TransferRiskLevel.medium
+                                  ? '71%'
+                                  : '94%',
+                    ),
                   ],
                 ),
               ),
@@ -89,7 +142,7 @@ class TransferResultScreen extends ConsumerWidget {
                     foregroundColor: RawShieldColors.background,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                   ),
-                  child: const Text('Retour à l’accueil'),
+                  child: Text(s.trBackHome),
                 ),
               ),
               const SizedBox(height: RawShieldSpacing.md),
@@ -106,7 +159,7 @@ class TransferResultScreen extends ConsumerWidget {
                     foregroundColor: RawShieldColors.gold,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                   ),
-                  child: const Text('Nouveau transfert'),
+                  child: Text(s.trNewTransfer),
                 ),
               ),
               const SizedBox(height: RawShieldSpacing.lg),

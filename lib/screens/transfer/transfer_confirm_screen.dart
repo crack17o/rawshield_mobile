@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+import '../../l10n/app_strings.dart';
 import '../../theme/rawshield_theme.dart';
 import 'transfer_state.dart';
+import '../../utils/currency_utils.dart';
 
 class TransferConfirmScreen extends ConsumerWidget {
   const TransferConfirmScreen({super.key});
@@ -11,8 +13,14 @@ class TransferConfirmScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final s = ref.watch(appStringsProvider);
     final draft = ref.watch(transferDraftProvider);
     final amount = draft.amountCdf ?? 0;
+    final debitCurrency = draft.debitCurrency;
+    final amountInDebitCurrency = CurrencyUtils.fromCdfTo(debitCurrency, amount);
+    final amountLabel = debitCurrency == CurrencyUtils.usd
+        ? '${amountInDebitCurrency.toStringAsFixed(2)} ${CurrencyUtils.usd}'
+        : '$amount ${CurrencyUtils.cdf}';
 
     return Scaffold(
       backgroundColor: RawShieldColors.background,
@@ -35,7 +43,7 @@ class TransferConfirmScreen extends ConsumerWidget {
                 ),
                 Expanded(
                   child: Text(
-                    'Confirmation',
+                    s.transferConfirmation,
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                     style: t.titleLarge?.copyWith(color: RawShieldColors.text),
@@ -63,7 +71,7 @@ class TransferConfirmScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: RawShieldSpacing.sm),
-                Text('Étape 3 sur 5 : Confirmer', style: t.labelSmall?.copyWith(color: RawShieldColors.textSecondary)),
+                Text(s.tfWizStep3, style: t.labelSmall?.copyWith(color: RawShieldColors.textSecondary)),
               ],
             ),
           ),
@@ -82,12 +90,13 @@ class TransferConfirmScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Récapitulatif', style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
+                      Text(s.tfRecap, style: t.titleMedium?.copyWith(color: RawShieldColors.text)),
                       const SizedBox(height: RawShieldSpacing.md),
-                      _Row(label: 'Destinataire', value: draft.recipientName ?? '—'),
-                      _Row(label: 'Téléphone', value: draft.recipientPhone ?? '—'),
-                      _Row(label: 'Montant', value: '${amount.toString()} CDF'),
-                      if ((draft.note ?? '').isNotEmpty) _Row(label: 'Motif', value: draft.note!),
+                      _Row(label: s.transferRecipientTitle, value: draft.recipientName ?? '—'),
+                      _Row(label: s.tfRowPhone, value: draft.recipientPhone ?? '—'),
+                      _Row(label: s.tfRowDebitAccount, value: debitCurrency),
+                      _Row(label: s.txnAmount, value: amountLabel),
+                      if ((draft.note ?? '').isNotEmpty) _Row(label: s.tfRowMotif, value: draft.note!),
                       const SizedBox(height: RawShieldSpacing.md),
                       Container(
                         padding: const EdgeInsets.all(RawShieldSpacing.md),
@@ -102,8 +111,8 @@ class TransferConfirmScreen extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 amount >= 250000
-                                    ? 'RAWShield AI demande une vérification (OTP) pour ce montant.'
-                                    : 'RAWShield AI est actif — validation rapide.',
+                                    ? s.tfOtpHighRiskLine
+                                    : s.tfOtpLowRiskLine,
                                 style: t.bodySmall?.copyWith(color: RawShieldColors.textSecondary),
                               ),
                             ),
@@ -132,7 +141,7 @@ class TransferConfirmScreen extends ConsumerWidget {
                   foregroundColor: RawShieldColors.background,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(RawShieldRadii.md)),
                 ),
-                child: const Text('Valider'),
+                child: Text(s.tfValider),
               ),
             ),
           ),
